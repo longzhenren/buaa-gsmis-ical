@@ -3,7 +3,7 @@
 // Date: 2023-09-01
 
 // 设置开始日期（第1周星期一）,按需修改
-const startDate = new Date('2023-09-04')
+const startDate = new Date('2024-02-26')
 
 // 节次到时间范围的映射,按需修改
 const scheduleMappings = {
