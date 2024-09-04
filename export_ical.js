@@ -24,8 +24,8 @@ const scheduleMappings = {
 };
 
 // 解析HTML代码，生成iCal格式数据
-let icalData = `
-BEGIN:VCALENDAR
+let icalData = 
+`BEGIN:VCALENDAR
 VERSION:2.0
 X-WR-CALNAME:课程表
 CALSCALE:GREGORIAN
@@ -67,7 +67,7 @@ if (courseContainer) {
       // 解析课程信息和时间信息
       const courseCode = columns[0].textContent.trim();
       const courseName = columns[1].textContent.trim();
-      const weekText = columns[10].innerText.trim(); // 例如：2-17周 星期二[1-3节]主M401
+      const weekText = columns[9].innerText.trim(); // 例如：2-17周 星期二[1-3节]主M401
       const teacher = columns[7].textContent.trim();
       if (!weekText) {
         console.log("解析失败:", courseCode, "无时间安排,可能为线上课程");
@@ -79,7 +79,9 @@ if (courseContainer) {
       const repeatCourse = weekText.split('\n');
       repeatCourse.forEach(weekInfo => {
         // 解析每一段的周次范围
-        const weekRanges = weekInfo.match(/(\d+-\d+周)/g);
+        const weekRangeText =weekInfo.split(' ')[0].replace('周', '');
+        const weekRanges = weekRangeText.split(',');
+        // const weekRanges = weekInfo.match(/(\d+-\d+周)/g);
         const [, weekday, schedule, place] = weekInfo.match(/星期(\S+)\[(\d+-\d+)节\](.+)/);
 
         weekRanges.forEach(weekRange => {
@@ -110,24 +112,24 @@ if (courseContainer) {
               eminutes * 60 * 1000
             );
 
-            icalData += `
+            icalData += 
+`
 BEGIN:VEVENT
 DESCRIPTION:${teacher}
 DTSTART;TZID=Asia/Shanghai:${formatICalDateTime(courseStartDateTime)}
 DTEND;TZID=Asia/Shanghai:${formatICalDateTime(courseEndDateTime)}
 LOCATION:${place}
 SUMMARY:${courseName}
-END:VEVENT
-            `;
+END:VEVENT`;
           }
         });
       });
     });
   });
 
-  icalData += `
-END:VCALENDAR
-  `;
+  icalData += 
+`
+END:VCALENDAR`;
 
   // 导出iCal数据为文件
   const blob = new Blob([icalData], { type: 'text/calendar' });
