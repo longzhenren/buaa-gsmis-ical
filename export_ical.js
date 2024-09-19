@@ -67,8 +67,10 @@ if (courseContainer) {
       // 解析课程信息和时间信息
       const courseCode = columns[0].textContent.trim();
       const courseName = columns[1].textContent.trim();
-      const weekText = columns[9].innerText.trim(); // 例如：2-17周 星期二[1-3节]主M401
-      const teacher = columns[7].textContent.trim();
+      // 例如：2-4,7,9-10,12-13,15-16周 星期五[11-13节]B118
+      // 例如：6-8双周,11,14周 星期五[11-13节]B118
+      const weekText = columns[9].innerText.trim();
+      const teacher = columns[6].textContent.trim();
       if (!weekText) {
         console.log("解析失败:", courseCode, "无时间安排,可能为线上课程");
         return;
@@ -78,27 +80,38 @@ if (courseContainer) {
       // 将多段上课信息分割
       const repeatCourse = weekText.split('\n');
       repeatCourse.forEach(weekInfo => {
+        const [, weekday, schedule, place] = weekInfo.match(/星期(\S+)\[(\d+-\d+)节](.+)/);
         // 解析每一段的周次范围
-        const weekRangeText =weekInfo.split(' ')[0].replace('周', '');
-        const weekRanges = weekRangeText.split(',');
-        // const weekRanges = weekInfo.match(/(\d+-\d+周)/g);
-        const [, weekday, schedule, place] = weekInfo.match(/星期(\S+)\[(\d+-\d+)节\](.+)/);
-
-        weekRanges.forEach(weekRange => {
-          const [startWeek, endWeek] = weekRange.replace('周', '').split('-').map(Number);
-          const [startPeriod, endPeriod] = schedule.split('-');
-          const startTime = scheduleMappings[startPeriod].startTime;
-          const endTime = scheduleMappings[endPeriod].endTime;
+        const weekRangeText =weekText.split(' ')[0];
+        weekRangeText.split(',').forEach(weekRange => {
+          weekRange = weekRange.replace('周', '');
+          let startWeek, endWeek;
+          let step = 1;
+          if(weekRange.indexOf('-')>=0){
+            if(weekRange.indexOf('单') >= 0 || weekRange.indexOf('双') >= 0){
+              weekRange = weekRange.replace('单', '');
+              weekRange = weekRange.replace('双', '');
+              step = 2;
+            }
+            [startWeek, endWeek] = weekRange.split('-').map(Number);
+          } else {
+            [startWeek, endWeek] = [Number(weekRange), Number(weekRange)];
+          }
 
           // 计算课程日期
           const dayOffset = ['一', '二', '三', '四', '五', '六', '日'].indexOf(weekday);
           // 循环每周生成一个事件
-          for (let i = startWeek; i <= endWeek; i++) {
+          for (let i = startWeek; i <= endWeek; i+=step) {
             const courseStartDate = new Date(
               startDate.getTime() +
               (i - 1) * 7 * 24 * 60 * 60 * 1000 +
               dayOffset * 24 * 60 * 60 * 1000
             );
+
+            // 时间段
+            const [startPeriod, endPeriod] = schedule.split('-');
+            const startTime = scheduleMappings[startPeriod].startTime;
+            const endTime = scheduleMappings[endPeriod].endTime;
             const [shours, sminutes] = startTime.split(':').map(Number);
             const courseStartDateTime = new Date(
               courseStartDate.getTime() +
@@ -111,6 +124,8 @@ if (courseContainer) {
               ehours * 60 * 60 * 1000 +
               eminutes * 60 * 1000
             );
+
+            console.log(courseName, '第'+i+'周', '星期'+weekday, schedule+'节');
 
             icalData += 
 `
